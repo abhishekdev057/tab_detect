@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SentinelTab - Anti-Cheating & Tab Switch Detection System</title>
+  <meta name="description" content="Advanced real-time browser tab switch, window blur, and unauthorized activity detection dashboard with AI proctoring simulation.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Ambient Background Glows -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  
+  <!-- Security Threat Flasher Overlay -->
+  <div id="threat-flash-overlay" class="threat-flash-overlay" aria-hidden="true"></div>
+
+  <!-- Main Container -->
+  <div class="app-wrapper">
+    
+    <!-- Top HUD Navigation Bar -->
+    <header class="hud-header">
+      <div class="hud-brand">
+        <div class="brand-radar">
+          <span class="radar-ping"></span>
+          <span class="radar-dot"></span>
+        </div>
+        <div class="brand-text">
+          <h1>SENTINEL<span>TAB</span></h1>
+          <span class="brand-sub">PROCTORING &amp; ACTIVITY SHIELD v2.4</span>
+        </div>
+      </div>
+
+      <div class="hud-status-badge" id="hud-status-badge">
+        <span class="status-indicator-dot"></span>
+        <span class="status-indicator-text" id="status-text">MONITORING ACTIVE</span>
+      </div>
+
+      <div class="hud-center-stats">
+        <div class="timer-card">
+          <span class="timer-label">SESSION TIME</span>
+          <span class="timer-val" id="session-timer">00:00:00</span>
+        </div>
+      </div>
+
+      <div class="hud-controls">
+        <button id="btn-fullscreen" class="hud-btn" title="Toggle Fullscreen Mode">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+          </svg>
+          <span class="btn-text">Fullscreen</span>
+        </button>
+
+        <button id="btn-audio-toggle" class="hud-btn" title="Toggle Sound Alarm">
+          <svg id="sound-icon-on" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <svg id="sound-icon-off" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+          <span class="btn-text" id="sound-btn-text">Alarm ON</span>
+        </button>
+
+        <button id="btn-simulate-violation" class="hud-btn btn-warning" title="Test Alarm Trigger">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <span class="btn-text">Test Alert</span>
+        </button>
+
+        <button id="btn-reset" class="hud-btn btn-danger" title="Reset Counts &amp; Integrity">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <polyline points="23 20 23 14 17 14"></polyline>
+            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+          </svg>
+          <span class="btn-text">Reset</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Top Metric Cards Row -->
+    <section class="metrics-grid">
+      
+      <!-- Integrity Gauge Card -->
+      <div class="metric-card gauge-metric-card">
+        <div class="gauge-container">
+          <svg class="gauge-svg" viewBox="0 0 120 120">
+            <circle class="gauge-bg" cx="60" cy="60" r="48" />
+            <circle class="gauge-fill" id="gauge-fill" cx="60" cy="60" r="48" />
+          </svg>
+          <div class="gauge-inner">
+            <span class="gauge-val" id="integrity-percent">100%</span>
+            <span class="gauge-sub">INTEGRITY</span>
+          </div>
+        </div>
+        <div class="gauge-details">
+          <span class="metric-title">CANDIDATE TRUST SCORE</span>
+          <p class="metric-desc" id="integrity-description">Optimal: No violations recorded</p>
+        </div>
+      </div>
+
+      <!-- Strikes Card -->
+      <div class="metric-card strikes-metric-card">
+        <div class="card-icon strike-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div class="card-content">
+          <span class="metric-title">STRIKES ACCUMULATED</span>
+          <div class="strikes-display">
+            <span class="metric-number" id="strike-counter">0</span>
+            <span class="metric-denom">/ 3 MAX</span>
+          </div>
+          <div class="strike-bars">
+            <span class="strike-bar" id="strike-bar-1"></span>
+            <span class="strike-bar" id="strike-bar-2"></span>
+            <span class="strike-bar" id="strike-bar-3"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Switches Count -->
+      <div class="metric-card">
+        <div class="card-icon tab-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </div>
+        <div class="card-content">
+          <span class="metric-title">TAB SWITCHES</span>
+          <span class="metric-number" id="tab-switch-count">0</span>
+          <span class="metric-sub" id="last-tab-time">Last: None</span>
+        </div>
+      </div>
+
+      <!-- Window Blurs Count -->
+      <div class="metric-card">
+        <div class="card-icon blur-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+          </svg>
+        </div>
+        <div class="card-content">
+          <span class="metric-title">WINDOW BLURS / APP SWITCH</span>
+          <span class="metric-number" id="window-blur-count">0</span>
+          <span class="metric-sub" id="blur-status">Focus: In Window</span>
+        </div>
+      </div>
+
+      <!-- Total Time Away -->
+      <div class="metric-card">
+        <div class="card-icon time-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <div class="card-content">
+          <span class="metric-title">TOTAL TIME AWAY</span>
+          <span class="metric-number" id="time-away-val">0.0<small>s</small></span>
+          <span class="metric-sub">Accumulated away time</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Main 2-Column Proctoring Dashboard -->
+    <main class="dashboard-layout">
+      
+      <!-- Left Column: Interactive Exam Sandbox -->
+      <section class="left-column">
+        <div class="panel exam-sandbox-panel">
+          
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <span class="badge badge-accent">LIVE TEST SANDBOX</span>
+              <h2>Interactive Assessment Simulator</h2>
+            </div>
+            <div class="sandbox-hints">
+              <span class="pulse-indicator"></span> Try switching tabs or pressing Alt+Tab now
+            </div>
+          </div>
+
+          <!-- Sandbox Instruction Notice -->
+          <div class="sandbox-notice">
+            <div class="notice-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <div class="notice-content">
+              <strong>Rules In Effect:</strong> Opening other tabs, minimizing, pressing <kbd>Alt</kbd>+<kbd>Tab</kbd>, copying text (<kbd>Ctrl+C</kbd>), or right-clicking will trigger immediate strikes and acoustic alarm.
+            </div>
+          </div>
+
+          <!-- Question Content Box -->
+          <div class="question-container" id="question-container">
+            <div class="question-meta">
+              <span class="question-number" id="q-counter">Question 1 of 3</span>
+              <span class="question-topic">Topic: Web Security &amp; Browser APIs</span>
+            </div>
+
+            <div class="question-body">
+              <h3 id="question-text">Which modern Web API allows developers to detect when a browser tab becomes hidden or visible again to the user?</h3>
+            </div>
+
+            <!-- Options List -->
+            <div class="options-group" id="options-group">
+              <label class="option-card" for="opt-0">
+                <input type="radio" name="exam-opt" id="opt-0" value="0">
+                <span class="custom-radio"></span>
+                <span class="option-text">Document.visibilityState and visibilitychange event</span>
+              </label>
+              
+              <label class="option-card" for="opt-1">
+                <input type="radio" name="exam-opt" id="opt-1" value="1">
+                <span class="custom-radio"></span>
+                <span class="option-text">Window.onTabExit() native hook</span>
+              </label>
+
+              <label class="option-card" for="opt-2">
+                <input type="radio" name="exam-opt" id="opt-2" value="2">
+                <span class="custom-radio"></span>
+                <span class="option-text">Navigator.tabSwitchDetector()</span>
+              </label>
+
+              <label class="option-card" for="opt-3">
+                <input type="radio" name="exam-opt" id="opt-3" value="3">
+                <span class="custom-radio"></span>
+                <span class="option-text">ScreenOrientation.hiddenState</span>
+              </label>
+            </div>
+
+            <!-- Subjective Answer Sandbox (Copy-Paste Protected) -->
+            <div class="answer-notes-area">
+              <div class="notes-header">
+                <label for="student-notes">Candidate Explanation (Protected against Copy / Paste):</label>
+                <span class="protected-pill">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  Clipboard Shield Active
+                </span>
+              </div>
+              <textarea id="student-notes" placeholder="Type your answer here... (Try copying or pasting from external sources to test detection)"></textarea>
+            </div>
+
+            <!-- Sandbox Navigation Buttons -->
+            <div class="exam-actions">
+              <button id="btn-prev-q" class="exam-btn secondary-btn" disabled>
+                &larr; Previous Question
+              </button>
+              <button id="btn-next-q" class="exam-btn primary-btn">
+                Next Question &rarr;
+              </button>
+              <button id="btn-submit-exam" class="exam-btn submit-btn">
+                Submit Test
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Feature Explainers / Test Guides -->
+          <div class="detection-cheatsheet">
+            <h4>Supported Detection Vectors:</h4>
+            <div class="cheatsheet-grid">
+              <div class="cheat-item">
+                <span class="cheat-dot red"></span>
+                <div>
+                  <strong>Tab Switch:</strong> Moving to another browser tab.
+                </div>
+              </div>
+              <div class="cheat-item">
+                <span class="cheat-dot yellow"></span>
+                <div>
+                  <strong>Window Blur:</strong> Clicking Discord, WhatsApp, or 2nd monitor.
+                </div>
+              </div>
+              <div class="cheat-item">
+                <span class="cheat-dot purple"></span>
+                <div>
+                  <strong>Fullscreen Exit:</strong> Pressing Esc to escape fullscreen.
+                </div>
+              </div>
+              <div class="cheat-item">
+                <span class="cheat-dot blue"></span>
+                <div>
+                  <strong>Mouse Leave:</strong> Moving cursor to address bar/tabs.
+                </div>
+              </div>
+              <div class="cheat-item">
+                <span class="cheat-dot orange"></span>
+                <div>
+                  <strong>Shortcuts Shield:</strong> Alt+Tab, Ctrl+C, Ctrl+V, F12.
+                </div>
+              </div>
+              <div class="cheat-item">
+                <span class="cheat-dot cyan"></span>
+                <div>
+                  <strong>DevTools Detector:</strong> Opening inspect element / console.
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Right Column: Surveillance HUD & Event Log -->
+      <aside class="right-column">
+        
+        <!-- Surveillance / Webcam Box -->
+        <div class="panel surveillance-panel">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <span class="badge badge-cyan">PROCTOR CAM HUD</span>
+              <h3>Optical Supervision Feed</h3>
+            </div>
+            <button id="btn-toggle-cam" class="pill-btn">
+              <span class="cam-dot"></span>
+              <span id="cam-btn-label">Enable Camera</span>
+            </button>
+          </div>
+
+          <div class="video-container">
+            <video id="webcam-video" autoplay playsinline muted class="hidden"></video>
+            <div id="camera-simulation-hud" class="camera-hud-mock">
+              <div class="hud-scanline"></div>
+              <div class="hud-reticle">
+                <div class="reticle-corner tl"></div>
+                <div class="reticle-corner tr"></div>
+                <div class="reticle-corner bl"></div>
+                <div class="reticle-corner br"></div>
+                <div class="reticle-target">
+                  <span class="target-icon">👤</span>
+                  <span class="target-label" id="ai-face-status">FACE TRACKING LOCKED</span>
+                </div>
+              </div>
+              <div class="hud-overlay-text top-left">STREAM_ID: 8092-AG</div>
+              <div class="hud-overlay-text top-right">LATENCY: 12ms</div>
+              <div class="hud-overlay-text bottom-left" id="feed-status-text">SIMULATION MODE</div>
+              <div class="hud-overlay-text bottom-right" id="fps-counter">30 FPS</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Protection Matrix Toggles -->
+        <div class="panel protection-matrix-panel">
+          <div class="panel-header">
+            <h3>Active Shield Configuration</h3>
+            <span class="badge badge-success">ALL SYSTEMS ONLINE</span>
+          </div>
+          <div class="toggles-grid">
+            <label class="toggle-item">
+              <input type="checkbox" id="toggle-tab-detect" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-label">Tab Switch Detection</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="toggle-blur-detect" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-label">Window Blur Detection</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="toggle-fullscreen-lock" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-label">Fullscreen Enforcement</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="toggle-mouseleave-detect" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-label">Mouse Boundary Guard</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="toggle-clipboard-guard" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-label">Copy/Paste &amp; Shortcut Shield</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="toggle-devtools-detect" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-label">DevTools Inspection Trap</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Threat & Activity Audit Log Stream -->
+        <div class="panel audit-log-panel">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <span class="badge badge-crimson" id="live-threat-badge">0 INCIDENTS</span>
+              <h3>Live Security Audit Trail</h3>
+            </div>
+            <div class="log-controls">
+              <button id="btn-export-log" class="icon-btn" title="Export Audit Log as JSON">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Export</span>
+              </button>
+              <button id="btn-clear-log" class="icon-btn" title="Clear log entries">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Log Event Items Container -->
+          <div class="audit-log-stream" id="audit-log-stream">
+            <!-- Initial Ready Event -->
+            <div class="log-entry log-entry-info">
+              <span class="log-timestamp">00:00:00</span>
+              <span class="log-badge badge-info">INFO</span>
+              <div class="log-message">
+                <strong>SentinelTab Proctor Initialized.</strong> All monitoring hooks and sensors armed.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+
+    </main>
+
+    <!-- Violation Alert Modal -->
+    <div id="violation-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+      <div class="modal-box violation-box">
+        <div class="modal-icon-wrap">
+          <div class="siren-pulse"></div>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h2 id="modal-violation-title">SUSPICIOUS ACTIVITY DETECTED!</h2>
+        <p id="modal-violation-msg">You navigated away from the active assessment window.</p>
+        <div class="violation-meta-pill" id="modal-violation-meta">
+          <span>Away Duration: <strong>1.8s</strong></span>
+          <span>•</span>
+          <span id="modal-strike-text">Strike 1 of 3</span>
+        </div>
+        <div class="modal-actions">
+          <button id="btn-dismiss-violation" class="btn-acknowledge">
+            I Understand &amp; Return To Test
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Maximum Strikes Disqualification / Lockout Screen -->
+    <div id="lockout-screen" class="lockout-overlay hidden">
+      <div class="lockout-card">
+        <div class="lockout-icon">🛑</div>
+        <h1>ASSESSMENT TERMINATED</h1>
+        <div class="lockout-status-badge">DISQUALIFIED FOR EXCEEDED STRIKES</div>
+        <p>Your session has been locked due to 3 consecutive security breaches (unauthorized tab switching / window loss). An incident audit log has been compiled and dispatched to the proctoring administrator.</p>
+        
+        <div class="lockout-report-summary">
+          <div class="summary-item">
+            <span>Final Trust Score:</span>
+            <strong id="lockout-trust-score">45%</strong>
+          </div>
+          <div class="summary-item">
+            <span>Total Tab Switches:</span>
+            <strong id="lockout-switches">3</strong>
+          </div>
+          <div class="summary-item">
+            <span>Total Time Away:</span>
+            <strong id="lockout-time-away">14.2s</strong>
+          </div>
+        </div>
+
+        <div class="lockout-actions">
+          <button id="btn-lockout-export" class="hud-btn">
+            Download Incident Audit (JSON)
+          </button>
+          <button id="btn-lockout-reset" class="hud-btn btn-danger">
+            Restart Fresh Session
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast-container" class="toast-container"></div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

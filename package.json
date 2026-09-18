@@ -1,0 +1,13 @@
+{
+  "name": "sentinel-tab-detect",
+  "version": "1.0.0",
+  "description": "Advanced Tab Switch & Anti-Cheating Activity Detection System",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx -y serve . -p 3000",
+    "dev": "npx -y serve . -p 3000"
+  },
+  "keywords": ["proctoring", "tab-switch-detection", "anti-cheating", "browser-security"],
+  "author": "",
+  "license": "MIT"
+}
