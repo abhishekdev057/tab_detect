@@ -146,11 +146,16 @@
     toggleClipboardGuard: document.getElementById('toggle-clipboard-guard'),
     toggleDevtoolsDetect: document.getElementById('toggle-devtools-detect'),
     
-    // Logs
+    // Logs & Reports
     liveThreatBadge: document.getElementById('live-threat-badge'),
     auditLogStream: document.getElementById('audit-log-stream'),
     btnExportLog: document.getElementById('btn-export-log'),
+    btnPrintReport: document.getElementById('btn-print-report'),
     btnClearLog: document.getElementById('btn-clear-log'),
+    logFilterPills: document.getElementById('log-filter-pills'),
+    strikeLimitSelect: document.getElementById('strike-limit-select'),
+    dynamicFavicon: document.getElementById('dynamic-favicon'),
+    metricDenom: document.querySelector('.metric-denom'),
     
     // Modals
     violationModal: document.getElementById('violation-modal'),
@@ -170,6 +175,36 @@
     // Toasts
     toastContainer: document.getElementById('toast-container')
   };
+
+  // ==========================================================================
+  // Dynamic Tab Title & Favicon Flasher
+  // ==========================================================================
+  let titleFlashInterval = null;
+  const FAVICON_CYAN = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300e5ff'><circle cx='12' cy='12' r='10'/></svg>";
+  const FAVICON_RED = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23f43f5e'><polygon points='12,2 2,22 22,22'/><circle cx='12' cy='17' r='1.5' fill='%23fff'/></svg>";
+
+  function startTitleFaviconFlash() {
+    let toggle = false;
+    if (titleFlashInterval) clearInterval(titleFlashInterval);
+    titleFlashInterval = setInterval(() => {
+      document.title = toggle ? '⚠️ RETURN TO TEST! | SentinelTab' : '🚨 CHEATING DETECTED! | SentinelTab';
+      if (dom.dynamicFavicon) {
+        dom.dynamicFavicon.href = toggle ? FAVICON_RED : FAVICON_CYAN;
+      }
+      toggle = !toggle;
+    }, 700);
+  }
+
+  function stopTitleFaviconFlash() {
+    if (titleFlashInterval) {
+      clearInterval(titleFlashInterval);
+      titleFlashInterval = null;
+    }
+    document.title = 'SentinelTab - Anti-Cheating & Tab Switch Detection System';
+    if (dom.dynamicFavicon) {
+      dom.dynamicFavicon.href = FAVICON_CYAN;
+    }
+  }
 
   // ==========================================================================
   // Web Audio Synthesizer (Native Browser Audio Oscillator)
@@ -467,6 +502,7 @@
         
         dom.threatFlash.classList.add('active');
         document.body.classList.add('violation-active');
+        startTitleFaviconFlash();
         
         logEvent('TAB_SWITCH', 'critical', 'Candidate navigated away from current tab (Tab hidden).');
         Sound.beep();
@@ -474,6 +510,7 @@
         // Tab is visible again (user returned)
         dom.threatFlash.classList.remove('active');
         document.body.classList.remove('violation-active');
+        stopTitleFaviconFlash();
 
         if (state.isAway && state.awayStartTimestamp) {
           const awayDurationMs = performance.now() - state.awayStartTimestamp;
@@ -922,11 +959,58 @@
     dom.btnLockoutExport.addEventListener('click', exportAuditJSON);
     dom.btnExportLog.addEventListener('click', exportAuditJSON);
 
+    // Print Official Report / PDF
+    if (dom.btnPrintReport) {
+      dom.btnPrintReport.addEventListener('click', () => {
+        initAudioContext();
+        window.print();
+        logEvent('REPORT', 'info', 'Official proctoring certificate printed / saved to PDF.');
+      });
+    }
+
+    // Strike Sensitivity Selector
+    if (dom.strikeLimitSelect) {
+      dom.strikeLimitSelect.addEventListener('change', (e) => {
+        state.maxStrikes = parseInt(e.target.value, 10) || 3;
+        if (dom.metricDenom) {
+          dom.metricDenom.textContent = `/ ${state.maxStrikes} MAX`;
+        }
+        logEvent('CONFIG', 'info', `Max allowed violation strikes changed to ${state.maxStrikes}.`);
+        showToast(`⚙️ Strike limit set to ${state.maxStrikes}`, 'info');
+      });
+    }
+
+    // Audit Log Filter Pills
+    if (dom.logFilterPills) {
+      const filterButtons = dom.logFilterPills.querySelectorAll('.filter-pill');
+      filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          filterButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const filter = btn.dataset.filter;
+          filterAuditLogs(filter);
+        });
+      });
+    }
+
     // Clear logs
     dom.btnClearLog.addEventListener('click', () => {
       dom.auditLogStream.innerHTML = '';
       state.auditLogs = [];
       logEvent('LOGS', 'info', 'Audit event history cleared by administrator.');
+    });
+  }
+
+  function filterAuditLogs(filter) {
+    const entries = dom.auditLogStream.querySelectorAll('.log-entry');
+    entries.forEach(entry => {
+      if (filter === 'all') {
+        entry.style.display = 'flex';
+      } else if (filter === 'critical') {
+        entry.style.display = entry.classList.contains('log-entry-critical') ? 'flex' : 'none';
+      } else if (filter === 'warning') {
+        entry.style.display = entry.classList.contains('log-entry-warning') ? 'flex' : 'none';
+      }
     });
   }
 
